@@ -17,7 +17,10 @@ setup(
     packages=["algojig"],
     package_data={"algojig": ["algojig_*"]},
     include_package_data=True,
-    install_requires=["py-algorand-sdk >= 1.6.0", "tealish >= 0.0.1"],
+    install_requires=[
+        "py-algorand-sdk @ git+https://github.com/algorand/py-algorand-sdk.git@03050cba94553de9a3ac455cba724a3e19ce10c7",
+        "tealish >= 0.0.1"
+    ],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
