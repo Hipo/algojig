@@ -1,7 +1,6 @@
 import base64
 import json
 from pathlib import Path
-from tealish import compile_program
 from .teal import TealProgram
 
 
@@ -18,6 +17,7 @@ class TealishProgram:
             self.compile()
 
     def compile(self):
+        from tealish import compile_program
         self.teal, self.min_teal, self.source_map = compile_program(self.tealish_source)
         self.teal_program = TealProgram(teal='\n'.join(self.teal))
         self.bytecode = self.teal_program.bytecode

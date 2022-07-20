@@ -19,7 +19,6 @@ setup(
     include_package_data=True,
     install_requires=[
         "py-algorand-sdk @ git+https://github.com/algorand/py-algorand-sdk.git@03050cba94553de9a3ac455cba724a3e19ce10c7",
-        "tealish >= 0.0.1"
     ],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",

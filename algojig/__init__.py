@@ -1,12 +1,8 @@
 import base64
 from .teal import TealProgram
+from .tealish import TealishProgram
 from .exceptions import LogicEvalError, LogicSigReject
 from algosdk.future.transaction import SuggestedParams
-
-try:
-    from .tealish import TealishProgram
-except ImportError:
-    pass
 
 
 sp = SuggestedParams(
