@@ -1,32 +1,18 @@
 
 
-from base64 import b64encode
+import secrets
 import unittest
-from algosdk.account import generate_account
-from algojig.ledger import JigLedger
-from algosdk.future.transaction import (PaymentTxn, SuggestedParams, assign_group_id, 
-    LogicSigTransaction, LogicSigAccount, ApplicationNoOpTxn, ApplicationCreateTxn, OnComplete, AssetTransferTxn)
+from algojig import JigLedger, sp, generate_accounts
+from algosdk.future.transaction import (PaymentTxn, assign_group_id, 
+    LogicSigTransaction, LogicSigAccount, ApplicationNoOpTxn, AssetTransferTxn)
 from algojig.teal import TealProgram
 
 
-addresses = []
-secrets = []
-for _ in range(10):
-    sk, pk = generate_account()
-    addresses.append(pk)
-    secrets.append(sk)
+secrets, addresses = generate_accounts(10)
 
 addresses[0] = 'HSEZPJKIVVY46JL55D7UAIBHDNLCUGCV2OGKHY3DZWU3AKAASFW7DSRDVU'
 secrets[0] = 'joZ92l+nlvGnuvzpMTHDnPyfqY/Zcuky/hgXNN2jjWQ8iZelSK1xzyV96P9AICcbVioYVdOMo+NjzamwKACRbQ=='
 
-sp = SuggestedParams(
-    fee=1000,
-    first=1,
-    last=1000,
-    min_fee=1000,
-    flat_fee=True,
-    gh=b64encode(b'\x9b\x01\x08\xe3\xf2Q-6\x1f\xd9\x01z\x9c\x07\x8a`\xe3\x8dR\xc5D\xe9<W\xeb\xd89\xa9\xb9\xdfw@')
-)
 
 class TestDebug(unittest.TestCase):
 
