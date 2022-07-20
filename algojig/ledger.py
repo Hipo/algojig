@@ -199,9 +199,9 @@ class JigLedger:
             algo = a['balances'][0][0]
             data = {
                 'b': algo,
-                # 'e': a.get('auth_addr'),
+                'e': decode_address(a.get('auth_addr')),
                 'j': len(a['balances']) - 1,
-                # 'l': len(a['local_states']),
+                'l': len(a['local_states']),
                 'k': sum(1 for a in self.apps.values() if a['creator'] == address),
             }
             q = 'INSERT INTO accountbase (address, data) VALUES (?, ?)'
