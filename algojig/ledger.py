@@ -204,8 +204,8 @@ class JigLedger:
                 # 'l': len(a['local_states']),
                 'k': sum(1 for a in self.apps.values() if a['creator'] == address),
             }
-            q = 'INSERT INTO accountbase (address, data) VALUES (?, ?) returning rowid'
-            a['rowid'] = self.db.execute(q, [decode_address(address), msgpack.packb(data)]).fetchone()[0]
+            q = 'INSERT INTO accountbase (address, data) VALUES (?, ?)'
+            a['rowid'] = self.db.execute(q, [decode_address(address), msgpack.packb(data)]).lastrowid
             for asset_id, b in a['balances'].items():
                 if asset_id > 0:
                     data = {
