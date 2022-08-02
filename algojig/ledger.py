@@ -81,13 +81,13 @@ class JigLedger:
 
     def set_global_state(self, app_id, state):
         self.global_states[app_id] = state
-    
+
     def eval_transactions(self, transactions):
         self.init_ledger_db()
         self.write()
         self.write_transactions(transactions)
         try:
-            result =  gojig.eval()
+            result = gojig.eval()
         except Exception as e:
             result = e.args[0]
             if 'logic eval error' in result:
@@ -98,7 +98,7 @@ class JigLedger:
                         app_id = stxn.transaction.index
                         break
                 error = re.findall('error: (.+?) pc=', result)[0]
-                pc = int(re.findall('pc=(\d+)', result)[0])
+                pc = int(re.findall(r'pc=(\d+)', result)[0])
                 line = None
                 if app_id:
                     p = self.apps[app_id]['approval_program']
@@ -113,7 +113,7 @@ class JigLedger:
                 #         break
                 if 'err=' in result:
                     error = re.findall('err=(.+?) pc=', result)[0]
-                    pc = int(re.findall('pc=(\d+)', result)[0])
+                    pc = int(re.findall(r'pc=(\d+)', result)[0])
                 else:
                     error = 'reject'
                     pc = None
@@ -128,7 +128,7 @@ class JigLedger:
 
     def write_transactions(self, transactions):
         write_to_file(transactions, self.stxn_filename)
-    
+
     def init_ledger_db(self):
         return gojig.init_ledger()
 
@@ -209,7 +209,7 @@ class JigLedger:
                         })
                     q = 'INSERT INTO resources (addrid, aidx, data) VALUES (?, ?, ?)'
                     self.db.execute(q, [a['rowid'], asset_id, msgpack.packb(data)])
-            
+
             for app_id, local_state in a['local_states'].items():
                 state = {}
                 for k, v in local_state.items():
@@ -233,7 +233,7 @@ class JigLedger:
         self.db.execute(q, [0, 0])
 
     def write_block(self):
-        max_id = max(list(self.assets.keys()) + list(self.apps.keys())) 
+        max_id = max(list(self.assets.keys()) + list(self.apps.keys()) + [0])
         q = "SELECT hdrdata from blocks where rnd = 1"
         hdr_b = self.block_db.execute(q).fetchone()[0]
         hdr = msgpack.unpackb(hdr_b, strict_map_key=False)
@@ -248,7 +248,7 @@ class JigLedger:
         self.assets = {}
         self.global_states = {}
         for a in updated_accounts:
-            print(updated_accounts[a])
+            # print(updated_accounts[a])
             # asset param records for asset creators
             for aid, params in updated_accounts[a].get(b'apar', {}).items():
                 self.assets[aid] = {
@@ -261,7 +261,6 @@ class JigLedger:
                     'reserve': encode_address(params.get(b'r', None)),
                     'freeze': encode_address(params.get(b'f', None)),
                     'clawback': encode_address(params.get(b'c', None)),
-                    'reserve': encode_address(params.get(b'r', None)),
                     'metadata_hash': params.get(b'am', None),
                     'creator': a,
 

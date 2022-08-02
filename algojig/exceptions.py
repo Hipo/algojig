@@ -4,10 +4,9 @@ class AppCallReject(Exception):
         self.message = 'AppCall Reject'
         self.result = result
         self.reason = result.reason
-    
+
     def __str__(self) -> str:
         return self.reason
-
 
 
 class LogicEvalError(Exception):
@@ -17,7 +16,7 @@ class LogicEvalError(Exception):
         self.error = error
         self.source = source
         super().__init__(result)
-    
+
     def __str__(self) -> str:
         line = self.source['line']
         line_no = self.source['line_no']
@@ -31,6 +30,6 @@ class LogicSigReject(Exception):
         self.error = error
         self.source = source
         super().__init__(result)
-    
+
     def __str__(self) -> str:
         return f'{self.error}'

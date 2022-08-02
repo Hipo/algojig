@@ -1,7 +1,10 @@
-from algojig import JigLedger, sp, generate_accounts
+from algojig import get_suggested_params, generate_accounts
+from algojig.ledger import JigLedger
 from algosdk.future.transaction import PaymentTxn
 
 secrets, addresses = generate_accounts(2)
+
+sp = get_suggested_params()
 
 ledger = JigLedger()
 ledger.set_account_balance(addresses[0], 1_000_000)

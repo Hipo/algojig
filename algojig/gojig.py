@@ -10,6 +10,7 @@ from algosdk.encoding import msgpack
 machine = platform.machine()
 binary = f'algojig_{machine}'
 
+
 def run(command, *args, input=None):
     with importlib.resources.path(algojig, binary) as p:
         output = subprocess.run([p, command, *args], capture_output=True, input=input)
@@ -46,12 +47,14 @@ def eval():
     else:
         raise Exception(output.stderr.decode())
 
+
 def read():
     output = run("read")
     if output.returncode == 0:
         return msgpack.unpackb(output.stdout, raw=True, strict_map_key=False)
     else:
         return output.stderr
+
 
 def compile(filename=None, teal=None):
     if teal is not None:

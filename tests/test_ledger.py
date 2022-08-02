@@ -1,12 +1,12 @@
-
-
-import secrets
 import unittest
-from algojig import JigLedger, sp, generate_accounts
-from algosdk.future.transaction import (PaymentTxn, assign_group_id, 
-    LogicSigTransaction, LogicSigAccount, ApplicationNoOpTxn, AssetTransferTxn)
-from algojig.teal import TealProgram
 
+from algojig import JigLedger, generate_accounts, get_suggested_params
+from algojig.teal import TealProgram
+from algosdk.future.transaction import (ApplicationNoOpTxn, AssetTransferTxn,
+                                        LogicSigAccount, LogicSigTransaction,
+                                        PaymentTxn, assign_group_id)
+
+sp = get_suggested_params()
 
 secrets, addresses = generate_accounts(10)
 
@@ -47,7 +47,7 @@ class TestDebug(unittest.TestCase):
             ).sign(secrets[0]),
         ]
         with self.assertRaises(Exception) as e:
-            block = self.ledger.eval_transactions(transactions)
+            self.ledger.eval_transactions(transactions)
         self.assertIn('overspend', e.exception.args[0])
 
     def test_fail_fee(self):
@@ -65,7 +65,7 @@ class TestDebug(unittest.TestCase):
             transactions[0].sign(secrets[0]),
         ]
         with self.assertRaises(Exception) as e:
-            block = self.ledger.eval_transactions(stxns)
+            self.ledger.eval_transactions(stxns)
         self.assertIn('in fees, which is less than the minimum', e.exception.args[0])
 
     def test_pass_group(self):
@@ -123,10 +123,10 @@ class TestDebug(unittest.TestCase):
                 sp=sp,
                 receiver=addresses[0],
                 amt=100,
-            ).sign(secrets[1]), # signed by 1 but sender is 0
+            ).sign(secrets[1]),  # signed by 1 but sender is 0
         ]
         with self.assertRaises(Exception) as e:
-            block = self.ledger.eval_transactions(transactions)
+            self.ledger.eval_transactions(transactions)
         self.assertIn('should have been authorized by', e.exception.args[0])
 
     def test_pass_rekey(self):
@@ -149,7 +149,7 @@ class TestDebug(unittest.TestCase):
         txn_group = assign_group_id(transactions)
         stxns = [
             txn_group[0].sign(secrets[0]),
-            txn_group[1].sign(secrets[1]) # signed by 1 but sender is 0
+            txn_group[1].sign(secrets[1])  # signed by 1 but sender is 0
         ]
         block = self.ledger.eval_transactions(stxns)
         self.assertEqual(len(block[b'txns']), 2)
@@ -189,12 +189,12 @@ class TestDebug(unittest.TestCase):
             ),
         ]
         with self.assertRaises(Exception) as e:
-            block = self.ledger.eval_transactions(transactions)
+            self.ledger.eval_transactions(transactions)
         self.assertIn('rejected by logic', e.exception.args[0])
 
     def test_fail_logisig_pc(self):
-        p = TealProgram(teal=
-        """#pragma version 6
+        p = TealProgram(teal="""
+        #pragma version 6
         int 1
         // a comment
         int 0
@@ -215,7 +215,7 @@ class TestDebug(unittest.TestCase):
             ),
         ]
         with self.assertRaises(Exception) as e:
-            block = self.ledger.eval_transactions(transactions)
+            self.ledger.eval_transactions(transactions)
         self.assertIn('rejected by logic', e.exception.args[0])
         # print(p.lookup(5))
 
@@ -245,7 +245,7 @@ class TestDebug(unittest.TestCase):
             ).sign(secrets[0]),
         ]
         with self.assertRaises(Exception) as e:
-            block = self.ledger.eval_transactions(transactions)
+            self.ledger.eval_transactions(transactions)
         self.assertIn('rejected by ApprovalProgram', e.exception.args[0])
 
     def test_pass_app_global_get(self):
@@ -280,7 +280,7 @@ class TestDebug(unittest.TestCase):
             ).sign(secrets[0]),
         ]
         with self.assertRaises(Exception) as e:
-            block = self.ledger.eval_transactions(transactions)
+            self.ledger.eval_transactions(transactions)
         self.assertIn('rejected by ApprovalProgram', e.exception.args[0])
 
     def test_pass_asset_transfer(self):

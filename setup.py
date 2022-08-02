@@ -1,6 +1,4 @@
-import codecs
-import os
-from setuptools import find_packages, setup
+from setuptools import setup
 PACKAGE_NAME = "algojig"
 VERSION = "0.0.1"
 DESCRIPTION = "A testing jig for the Algorand Virtual Machine."

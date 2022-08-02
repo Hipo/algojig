@@ -2,6 +2,7 @@ import unittest
 from algojig.gojig import compile
 from algojig.teal import TealProgram
 
+
 class TestDebug(unittest.TestCase):
 
     def test_pass_compile(self):

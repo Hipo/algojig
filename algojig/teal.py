@@ -2,6 +2,7 @@ from pathlib import Path
 from algosdk import source_map, logic
 from .gojig import compile
 
+
 class TealProgram:
     def __init__(self, filename=None, teal=None, bytecode=None):
         self.teal = teal
@@ -15,7 +16,7 @@ class TealProgram:
         self.hash = None
         if self.bytecode is None:
             self.compile()
-    
+
     def compile_teal(self):
         self.bytecode, map = compile(teal=self.teal)
         try:
@@ -29,7 +30,7 @@ class TealProgram:
 
     def lookup(self, pc):
         line = self.source_map.get_line_for_pc(pc)
-        src =  self.teal.split('\n')[line].strip()
+        src = self.teal.split('\n')[line].strip()
         result = {
             'filename': self.filename,
             'line_no': line,
