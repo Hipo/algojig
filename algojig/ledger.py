@@ -28,17 +28,33 @@ class JigLedger:
         self.creator_sk, self.creator = generate_account()
         self.set_account_balance(self.creator, 100_000_000)
 
-    def open_db(self):
-        self.db = sqlite3.connect(self.filename)
-        self.block_db = sqlite3.connect(self.block_db_filename)
-
     def set_account_balance(self, address, balance, asset_id=0, frozen=False):
         if address not in self.accounts:
             self.accounts[address] = {'address': address, 'local_states': {}, 'balances': {}}
         if asset_id and asset_id not in self.assets:
             self.create_asset(asset_id)
-
         self.accounts[address]['balances'][asset_id] = [balance, frozen]
+
+    def opt_in_asset(self, address, asset_id):
+        self.set_account_balance(address, 0, asset_id=asset_id)
+
+    def add(self, address, amount, asset_id=0):
+        balance, _ = self.accounts[address]['balances'].get(asset_id, [0, False])
+        new_balance = balance + amount
+        assert new_balance >= 0
+        self.set_account_balance(address, new_balance, asset_id=asset_id)
+
+    def subtract(self, address, amount, asset_id=0):
+        self.add(address, amount * -1, asset_id)
+
+    def move(self, amount, asset_id=0, sender=None, receiver=None):
+        assert sender or receiver
+
+        if receiver:
+            self.add(receiver, amount, asset_id)
+
+        if sender:
+            self.subtract(sender, amount, asset_id)
 
     def create_asset(self, asset_id, params=None):
         if asset_id is None:
@@ -80,11 +96,17 @@ class JigLedger:
         if state is None:
             del self.accounts[address]['local_states'][app_id]
 
-    def set_auth_addr(self, address, auth_addr):
-        self.accounts[address]['auth_addr'] = auth_addr
-
     def set_global_state(self, app_id, state):
         self.global_states[app_id] = state
+
+    def update_local_state(self, address, app_id, state_delta):
+        self.accounts[address]['local_states'][app_id].update(state_delta)
+
+    def update_global_state(self, app_id, state_delta):
+        self.global_states[app_id].update(state_delta)
+
+    def set_auth_addr(self, address, auth_addr):
+        self.accounts[address]['auth_addr'] = auth_addr
 
     def eval_transactions(self, transactions):
         self.init_ledger_db()
@@ -135,6 +157,10 @@ class JigLedger:
 
     def init_ledger_db(self):
         return gojig.init_ledger()
+
+    def open_db(self):
+        self.db = sqlite3.connect(self.filename)
+        self.block_db = sqlite3.connect(self.block_db_filename)
 
     def write(self):
         self.open_db()
