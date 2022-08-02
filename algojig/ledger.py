@@ -12,8 +12,10 @@ from .exceptions import LogicEvalError, LogicSigReject
 class JigLedger:
     def __init__(self):
         self.filename = '/tmp/jig/jig_ledger.sqlite3.tracker.sqlite'
+        self.block_db_filename = '/tmp/jig/jig_ledger.sqlite3.block.sqlite'
         self.stxn_filename = '/tmp/jig/stxns'
         self.db = None
+        self.block_db = None
         self.apps = {}
         self.assets = {}
         self.accounts = {}
@@ -23,6 +25,7 @@ class JigLedger:
     
     def open_db(self):
         self.db = sqlite3.connect(self.filename)
+        self.block_db = sqlite3.connect(self.block_db_filename)
 
     def set_account_balance(self, address, balance, asset_id=0, frozen=False):
         if address not in self.accounts:
@@ -83,7 +86,7 @@ class JigLedger:
         self.write()
         self.write_transactions(transactions)
         try:
-            output = self.run()
+            result =  gojig.eval()
         except Exception as e:
             result = e.args[0]
             if 'logic eval error' in result:
@@ -117,24 +120,16 @@ class JigLedger:
                 raise LogicSigReject(result, txn_id, error, line) from None
             else:
                 raise
-        return output
+        for a in list(result['accounts'].keys()):
+            result['accounts'][encode_address(a)] = result['accounts'].pop(a)
+        self.update_accounts(result['accounts'])
+        return result['block']
 
     def write_transactions(self, transactions):
         write_to_file(transactions, self.stxn_filename)
     
     def init_ledger_db(self):
         return gojig.init_ledger()
-
-    def run(self):
-        return gojig.eval()
-
-    def print_accounts(self):
-        print(gojig.read())
-        self.open_db()
-        accounts = self.db.execute('select * from accountbase').fetchall()
-        for a in accounts:
-            print(a[0], encode_address(a[1]), msgpack.unpackb(a[2]))
-        self.db.close()
 
     def write(self):
         self.open_db()
@@ -143,28 +138,8 @@ class JigLedger:
         self.write_block()
         self.db.commit()
         self.db.close()
-
-    def write_assets(self):
-        for asset_id, a in self.assets.items():
-            creator_addrid = self.accounts[a['creator']]['rowid']
-            data = {
-                'a': a['total'],
-                'b': 0,
-                'c': False,
-                'd': b'TEST',
-                'e': b'TEST',
-                'f': b'https://example.com',
-                'g': b'', # metadatahash
-                'h': None,
-                'i': None,
-                'j': None,
-                'k': None,
-                'y': 7,
-            }
-            q = 'INSERT INTO resources (addrid, aidx, data) VALUES (?, ?, ?)'
-            self.db.execute(q, [creator_addrid, asset_id, msgpack.packb(data)])
-            q = 'INSERT INTO assetcreators (asset, creator, ctype) VALUES (?, ?, ?)'
-            self.db.execute(q, [asset_id, decode_address(a['creator']), 0])
+        self.block_db.commit()
+        self.block_db.close()
 
     def write_apps(self):
         for app_id, a in self.apps.items():
@@ -257,4 +232,64 @@ class JigLedger:
         self.db.execute(q, [0, 0])
 
     def write_block(self):
-        pass
+        max_id = max(list(self.assets.keys()) + list(self.apps.keys())) 
+        q = "SELECT hdrdata from blocks where rnd = 1"
+        hdr_b = self.block_db.execute(q).fetchone()[0]
+        hdr = msgpack.unpackb(hdr_b, strict_map_key=False)
+        # Set 'tc' (Transaction Counter) which defines where asset/app_ids start
+        # Set it to 1 greater than the current max id used for assets/apps
+        hdr['tc'] = max_id + 1
+        q = "UPDATE blocks set hdrdata = ? where rnd = 1"
+        self.block_db.execute(q, [msgpack.packb(hdr)])
+
+    def update_accounts(self, updated_accounts):
+        # reset globals
+        self.assets = {}
+        self.global_states = {}
+        for a in updated_accounts:
+            print(updated_accounts[a])
+            # asset param records for asset creators
+            for aid, params in updated_accounts[a].get(b'apar', {}).items():
+                self.assets[aid] = {
+                    'total': params.get(b't', 0),
+                    'default_frozen': params.get(b'df', False),
+                    'decimals': params.get(b'dc', 0),
+                    'unit_name': params.get(b'un', None),
+                    'name': params.get(b'an', None),
+                    'url': params.get(b'au', None),
+                    'reserve': encode_address(params.get(b'r', None)),
+                    'freeze': encode_address(params.get(b'f', None)),
+                    'clawback': encode_address(params.get(b'c', None)),
+                    'reserve': encode_address(params.get(b'r', None)),
+                    'metadata_hash': params.get(b'am', None),
+                    'creator': a,
+
+                }
+            if a not in self.accounts:
+                self.set_account_balance(a, 0)
+            account = self.accounts[a]
+            # reset all account balances
+            account['balances'] = {}
+            account['balances'][0] = [updated_accounts[a].get(b'algo', 0), False]
+            for aid, holding in updated_accounts[a].get(b'asset', {}).items():
+                account['balances'][aid] = [holding.get(b'a', 0), holding.get(b'f', False)]
+
+            # opted in apps
+            account['local_states'] = {}
+            for aid, data in updated_accounts[a].get(b'appl', {}).items():
+                state = {}
+                for k, v in data[b'tkv'].items():
+                    state[k] = v.get(b'tb') if v[b'tt'] == 1 else v.get(b'ui', 0)
+                account['local_states'][aid] = state
+
+            # created apps
+            for aid, data in updated_accounts[a].get(b'appp', {}).items():
+                state = {}
+                for k, v in data[b'gs'].items():
+                    state[k] = v.get(b'tb') if v[b'tt'] == 1 else v.get(b'ui', 0)
+                self.global_states[aid] = state
+
+            # TODO: We don't handle changes to the app's programs here.
+            # We should be updating self.apps too but that's a bit tricky because it contains references
+            # to Programs instead of raw bytecode
+        

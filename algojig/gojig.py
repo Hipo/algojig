@@ -1,5 +1,6 @@
 import base64
 import importlib.resources
+from io import BytesIO
 import json
 import subprocess
 import platform
@@ -27,7 +28,21 @@ def eval():
     output = run("eval")
     if output.returncode == 0:
         # print(output.stderr.decode())
-        return msgpack.unpackb(output.stdout, raw=True, strict_map_key=False)
+        outputs = output.stdout
+        accounts = []
+        u = msgpack.Unpacker(BytesIO(outputs), raw=True, strict_map_key=False, use_list=True)
+        data = list(u)
+        block = data[0]
+        # backwards compatibility for gojig binaries that don't output accounts
+        if len(data) > 1:
+            accounts = data[1]
+        else:
+            accounts = {}
+        result = {
+            'block': block,
+            'accounts': accounts,
+        }
+        return result
     else:
         raise Exception(output.stderr.decode())
 
