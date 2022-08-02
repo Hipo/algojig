@@ -1,12 +1,13 @@
 import re
 import sqlite3
-from algosdk.encoding import decode_address, msgpack_encode, encode_address
-from algosdk.encoding import msgpack
-from algosdk.future.transaction import write_to_file
+
 from algosdk.account import generate_account
-from .program import read_program
+from algosdk.encoding import decode_address, encode_address, msgpack
+from algosdk.future.transaction import write_to_file
+
 from . import gojig
 from .exceptions import LogicEvalError, LogicSigReject
+from .program import read_program
 
 
 class JigLedger:
@@ -22,7 +23,7 @@ class JigLedger:
         self.global_states = {}
         self.creator_sk, self.creator = generate_account()
         self.set_account_balance(self.creator, 100_000_000)
-    
+
     def open_db(self):
         self.db = sqlite3.connect(self.filename)
         self.block_db = sqlite3.connect(self.block_db_filename)
@@ -32,8 +33,8 @@ class JigLedger:
             self.accounts[address] = {'address': address, 'local_states': {}, 'balances': {}}
         if asset_id and asset_id not in self.assets:
             self.create_asset(asset_id)
-        if asset_id not in self.accounts[address]['balances']:
-            self.accounts[address]['balances'][asset_id] = [balance, frozen]
+
+        self.accounts[address]['balances'][asset_id] = [balance, frozen]
 
     def create_asset(self, asset_id, params=None):
         if asset_id is None:
@@ -105,11 +106,11 @@ class JigLedger:
                 raise LogicEvalError(result, txn_id, error, line) from None
             elif 'rejected by logic' in result:
                 txn_id = re.findall('transaction ([0-9A-Z]+):', result)[0]
-                lsig = None
-                for stxn in transactions:
-                    if stxn.get_txid() == txn_id:
-                        lsig = stxn.lsig
-                        break
+                # lsig = None
+                # for stxn in transactions:
+                #     if stxn.get_txid() == txn_id:
+                #         lsig = stxn.lsig
+                #         break
                 if 'err=' in result:
                     error = re.findall('err=(.+?) pc=', result)[0]
                     pc = int(re.findall('pc=(\d+)', result)[0])
@@ -146,7 +147,7 @@ class JigLedger:
             creator_addrid = self.accounts[a['creator']]['rowid']
             global_state = self.global_states.get(app_id, {})
             g = {}
-            for k,v  in global_state.items():
+            for k, v in global_state.items():
                 g[k] = {}
                 if type(v) == bytes:
                     g[k]['tt'] = 1
@@ -157,7 +158,7 @@ class JigLedger:
             data = {
                 'q': a['approval_program'].bytecode,
                 'r': a['approval_program'].bytecode,
-                's': g, # global state
+                's': g,     # global state
                 't': a['local_ints'],
                 'u': a['local_bytes'],
                 'v': a['global_ints'],
@@ -184,8 +185,8 @@ class JigLedger:
             for asset_id, b in a['balances'].items():
                 if asset_id > 0:
                     data = {
-                        'l': b[0], # balance
-                        'm': b[1], # frozen
+                        'l': b[0],  # balance
+                        'm': b[1],  # frozen
                         'y': 0 if b[0] else 4,
                     }
                     if self.assets[asset_id]['creator'] == address:
@@ -211,7 +212,7 @@ class JigLedger:
             
             for app_id, local_state in a['local_states'].items():
                 state = {}
-                for k,v  in local_state.items():
+                for k, v in local_state.items():
                     state[k] = {}
                     if type(v) == bytes:
                         state[k]['tt'] = 1
@@ -222,7 +223,7 @@ class JigLedger:
                 data = {
                     'n': 16,
                     'o': 16,
-                    'p': state, # local_state state
+                    'p': state,     # local_state state
                     'y': 0,
                 }
                 q = 'INSERT INTO resources (addrid, aidx, data) VALUES (?, ?, ?)'
@@ -292,4 +293,3 @@ class JigLedger:
             # TODO: We don't handle changes to the app's programs here.
             # We should be updating self.apps too but that's a bit tricky because it contains references
             # to Programs instead of raw bytecode
-        
