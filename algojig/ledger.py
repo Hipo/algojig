@@ -1,5 +1,6 @@
 import re
 import sqlite3
+import logging
 
 from algosdk.account import generate_account
 from algosdk.encoding import decode_address, encode_address, msgpack
@@ -8,6 +9,9 @@ from algosdk.future.transaction import write_to_file
 from . import gojig
 from .exceptions import LogicEvalError, LogicSigReject
 from .program import read_program
+
+
+logger = logging.getLogger(__name__)
 
 
 class JigLedger:
@@ -244,6 +248,7 @@ class JigLedger:
         self.block_db.execute(q, [msgpack.packb(hdr)])
 
     def update_accounts(self, updated_accounts):
+        old_assets = dict(self.assets)
         # reset globals
         self.assets = {}
         self.global_states = {}
@@ -263,8 +268,12 @@ class JigLedger:
                     'clawback': encode_address(params.get(b'c', None)),
                     'metadata_hash': params.get(b'am', None),
                     'creator': a,
-
                 }
+                # ensure creator has an asset holding record even if it is a 0 amount
+                if b'asset' not in updated_accounts[a]:
+                    updated_accounts[a][b'asset'] = {}
+                if aid not in updated_accounts[a][b'asset']:
+                    updated_accounts[a][b'asset'][aid] = {b'a': 0}
             if a not in self.accounts:
                 self.set_account_balance(a, 0)
             account = self.accounts[a]
@@ -292,3 +301,10 @@ class JigLedger:
             # TODO: We don't handle changes to the app's programs here.
             # We should be updating self.apps too but that's a bit tricky because it contains references
             # to Programs instead of raw bytecode
+
+        for a in old_assets:
+            if a not in self.assets:
+                logger.debug(f'Deleted Asset {a}')
+        for a in self.assets:
+            if a not in old_assets:
+                logger.debug(f'New Asset {a}')
