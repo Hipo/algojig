@@ -285,7 +285,7 @@ class JigLedger:
             # created apps
             for aid, data in updated_accounts[a].get(b'appp', {}).items():
                 state = {}
-                for k, v in data[b'gs'].items():
+                for k, v in data.get(b'gs', {}).items():
                     state[k] = v.get(b'tb') if v[b'tt'] == 1 else v.get(b'ui', 0)
                 self.global_states[aid] = state
 
