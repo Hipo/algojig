@@ -25,10 +25,12 @@ import (
 
 var genesisHash crypto.Digest
 var rewardsPool basics.Address
+var feeSink basics.Address
 
 func init() {
 	copy(genesisHash[:], []byte("\x9b\x01\x08\xe3\xf2Q-6\x1f\xd9\x01z\x9c\x07\x8a`\xe3\x8dR\xc5D\xe9<W\xeb\xd89\xa9\xb9\xdfw@"))
 	copy(rewardsPool[:], []byte("\x85\x0b{X.k<6l\xe2[\xc0\xae/\x10N\xa3?\x9f\xb9\xb6\xf47\xf6\x10\x1fZ<@Zp<"))
+	copy(feeSink[:], []byte("\xbcCg|\xb4O\xda\xe0\xfanXZF-\xe71\x1b\xf7\xd9\xd2kgD\x1b_\xe0\xdc\x02\xdb<\xee\xf6"))
 
 }
 
@@ -66,23 +68,50 @@ func main() {
 		readAccounts(fn)
 	case "compile":
 		compile(os.Args[2])
+	case "debug":
+		debug(fn)
 	default:
 		fmt.Println("expected 'init' or 'eval' subcommands")
 		os.Exit(1)
 	}
 }
 
+func debug(fn string) {
+	os.RemoveAll("/tmp/jig/jig_ledger.sqlite3.tracker.sqlite")
+	os.RemoveAll("/tmp/jig/jig_ledger.sqlite3.block.sqlite")
+	initLedger(fn)
+	evalTransactions(fn)
+}
+
 func initLedger(fn string) {
 	accounts := make(map[basics.Address]basics.AccountData)
 	ledger := makeJigLedger(fn, accounts)
 	prev, _ := ledger.BlockHdr(ledger.Latest())
+	// prev.Round = 200
 	block := bookkeeping.MakeBlock(prev)
-	ledger.AddBlock(block, agreement.Certificate{})
+	// set a known timestamp
+	block.TimeStamp = 1000
+	err := ledger.AddBlock(block, agreement.Certificate{})
+	if err != nil {
+		fmt.Fprint(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+	<-ledger.Wait(block.Round())
 	ledger.Close()
 }
 
 func evalTransactions(fn string) {
 	ledger := openJigLedger(fn)
+
+	// for i := 0; i < 998; i++ {
+	// 	prev, _ := ledger.BlockHdr(ledger.Latest())
+	// 	block := bookkeeping.MakeBlock(prev)
+	// 	err := ledger.AddBlock(block, agreement.Certificate{})
+	// 	if err != nil {
+	// 		fmt.Fprint(os.Stderr, err.Error())
+	// 		os.Exit(1)
+	// 	}
+	// }
 
 	prev, _ := ledger.BlockHdr(ledger.Latest())
 	block := bookkeeping.MakeBlock(prev)
@@ -90,6 +119,8 @@ func evalTransactions(fn string) {
 	if err != nil {
 		panic(err)
 	}
+
+	var addresses []basics.Address
 
 	var stxns []transactions.SignedTxn
 	f, _ := os.Open("/tmp/jig/stxns")
@@ -103,6 +134,14 @@ func evalTransactions(fn string) {
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)
+		}
+		addresses = append(addresses, st.Txn.RelevantAddrs(transactions.SpecialAddresses{})...)
+		addresses = append(addresses, st.Txn.Accounts...)
+		if st.Txn.ApplicationID > 0 {
+			a, _, err := ledger.GetCreator(basics.CreatableIndex(st.Txn.ApplicationID), basics.AppCreatable)
+			if err == nil {
+				addresses = append(addresses, a)
+			}
 		}
 		stxns = append(stxns, st)
 	}
@@ -138,6 +177,8 @@ func evalTransactions(fn string) {
 		os.Exit(1)
 	}
 
+	// time.Sleep(7 * time.Second)
+
 	block = newBlock.Block()
 	err = ledger.AddBlock(block, agreement.Certificate{Round: block.Round()})
 	if err != nil {
@@ -147,21 +188,59 @@ func evalTransactions(fn string) {
 
 	<-ledger.Wait(block.Round())
 
+	// Find all previously created assets
+	results, err := ledger.ListAssets(basics.AssetIndex(block.TxnCounter), block.TxnCounter)
+	if err != nil {
+		fmt.Fprint(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	// Add all asset creators to the list of addresses to fetch account info for
+	for _, createableLocator := range results {
+		exists := false
+		for _, address := range addresses {
+			if createableLocator.Creator == address {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			addresses = append(addresses, createableLocator.Creator)
+		}
+	}
+
+	// Lookup account data for all addresses
+	accounts := make(map[basics.Address]basics.AccountData)
+	for _, address := range addresses {
+		data, _, _, err := ledger.LookupLatest(address)
+		if err != nil {
+			fmt.Fprint(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+		// fmt.Fprint(os.Stderr, r, data, balance)
+		accounts[address] = data
+	}
+
 	ledger.Close()
 
 	// For some reason updates are NOT written to the accounts tracker db here.
 
-	ledger = openJigLedger(fn)
-	r1, r2 := ledger.LatestCommitted()
-	fmt.Fprint(os.Stderr, r1, r2)
-	ledger.Close()
+	// ledger = openJigLedger(fn)
+	// r1, r2 := ledger.LatestCommitted()
+	// fmt.Fprint(os.Stderr, r1, r2)
+	// ledger.Close()
 
-	data, err := encode(block)
+	blockMsgp, err := encode(block)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Print(string(blockMsgp))
+	accountsMsgp, err := encode(accounts)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Print(string(accountsMsgp))
 
-	fmt.Print(string(data))
 	os.Exit(0)
 }
 
@@ -194,8 +273,12 @@ func encode(obj interface{}) ([]byte, error) {
 
 func makeJigLedger(fn string, initAccounts map[basics.Address]basics.AccountData) *ledger.Ledger {
 	var poolData basics.AccountData
-	poolData.MicroAlgos.Raw = 1 << 32
+	poolData.MicroAlgos.Raw = 123456789
 	initAccounts[rewardsPool] = poolData
+
+	var feeData basics.AccountData
+	feeData.MicroAlgos.Raw = 0
+	initAccounts[feeSink] = feeData
 
 	initBlock := bookkeeping.Block{
 		BlockHeader: bookkeeping.BlockHeader{
@@ -205,7 +288,7 @@ func makeJigLedger(fn string, initAccounts map[basics.Address]basics.AccountData
 				CurrentProtocol: protocol.ConsensusFuture,
 			},
 			RewardsState: bookkeeping.RewardsState{
-				FeeSink:     rewardsPool,
+				FeeSink:     feeSink,
 				RewardsPool: rewardsPool,
 			},
 		},
