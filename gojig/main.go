@@ -196,16 +196,16 @@ func evalTransactions(fn string) {
 	}
 
 	// Add all asset creators to the list of addresses to fetch account info for
-	for _, createableLocator := range results {
+	for _, creatableLocator := range results {
 		exists := false
 		for _, address := range addresses {
-			if createableLocator.Creator == address {
+			if creatableLocator.Creator == address {
 				exists = true
 				break
 			}
 		}
 		if !exists {
-			addresses = append(addresses, createableLocator.Creator)
+			addresses = append(addresses, creatableLocator.Creator)
 		}
 	}
 

@@ -24,4 +24,9 @@ transactions = [
     ).sign(secrets[1]),
 ]
 block = ledger.eval_transactions(transactions)
-print(block[b'txns'])
+# print(block[b'txns'])
+balance, _ = ledger.get_account_balance(addresses[0])
+print(balance)
+
+balance, _ = ledger.get_account_balance(addresses[1])
+print(balance)

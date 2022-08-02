@@ -35,6 +35,9 @@ class JigLedger:
             self.create_asset(asset_id)
         self.accounts[address]['balances'][asset_id] = [balance, frozen]
 
+    def get_account_balance(self, address, asset_id=0):
+        return self.accounts[address]['balances'][asset_id]
+
     def opt_in_asset(self, address, asset_id):
         self.set_account_balance(address, 0, asset_id=asset_id)
 
@@ -108,6 +111,12 @@ class JigLedger:
     def set_auth_addr(self, address, auth_addr):
         self.accounts[address]['auth_addr'] = auth_addr
 
+    def get_global_state(self, app_id):
+        return self.global_states[app_id]
+
+    def get_local_state(self, address, app_id):
+        return self.accounts[address]['local_states'][app_id]
+
     def eval_transactions(self, transactions):
         self.init_ledger_db()
         self.write()
@@ -123,12 +132,14 @@ class JigLedger:
                     if stxn.get_txid() == txn_id:
                         app_id = stxn.transaction.index
                         break
-                error = re.findall('error: (.+?) pc=', result)[0]
-                pc = int(re.findall(r'pc=(\d+)', result)[0])
+                error = re.findall('error: (.+?) pc=', result)[-1]
+                pc = int(re.findall(r'pc=(\d+)', result)[-1])
                 line = None
                 if app_id:
                     p = self.apps[app_id]['approval_program']
                     line = p.lookup(pc)
+                if 'logic eval error: logic eval error:' in result:
+                    print(result)
                 raise LogicEvalError(result, txn_id, error, line) from None
             elif 'rejected by logic' in result:
                 txn_id = re.findall('transaction ([0-9A-Z]+):', result)[0]

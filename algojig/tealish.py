@@ -5,8 +5,9 @@ from .teal import TealProgram
 
 
 class TealishProgram:
-    def __init__(self, filename, bytecode=None):
+    def __init__(self, filename=None, bytecode=None, tealish=None):
         self.filename = filename
+        self.tealish_source = tealish
         if self.filename:
             self.tealish_source = open(filename).read()
         self.tealish_source_lines = self.tealish_source.split('\n')
