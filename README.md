@@ -9,10 +9,11 @@ completed as usual.
 
 Standalone script:
 ```
-from algojig import JigLedger, sp, generate_accounts
+from algojig import JigLedger, get_suggested_params, generate_accounts
 from algosdk.future.transaction import PaymentTxn
 
 secrets, addresses = generate_accounts(2)
+sp = get_suggested_params()
 
 ledger = JigLedger()
 ledger.set_account_balance(addresses[0], 1_000_000)
