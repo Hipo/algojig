@@ -1,4 +1,3 @@
-import base64
 import json
 from pathlib import Path
 from .teal import TealProgram

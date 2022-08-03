@@ -1,7 +1,9 @@
 import base64
+from pprint import pprint
 
 from algosdk.account import generate_account
 from algosdk.future.transaction import SuggestedParams
+from algosdk.encoding import encode_address
 
 
 from .teal import TealProgram  # noqa
@@ -30,3 +32,30 @@ def generate_accounts(n=10):
         addresses.append(pk)
         secrets.append(sk)
     return secrets, addresses
+
+
+def _dump(d):
+    if isinstance(d, bytes):
+        if len(d) == 32:
+            return encode_address(d)
+        return d
+    elif isinstance(d, (tuple, list, set)):
+        return [_dump(x) for x in d]
+    elif isinstance(d, dict):
+        result = {}
+        keys = list(d.keys())
+        values = [_dump(v) for v in d.values()]
+        try:
+            keys = [k.decode() if isinstance(k, bytes) else k for k in keys]
+        except UnicodeDecodeError:
+            pass
+        result = dict(zip(keys, values))
+        return result
+    else:
+        return d
+
+
+def dump(*d):
+    if len(d) == 1:
+        d = d[0]
+    pprint(_dump(d), indent=2)

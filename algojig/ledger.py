@@ -25,6 +25,7 @@ class JigLedger:
         self.assets = {}
         self.accounts = {}
         self.global_states = {}
+        self.raw_accounts = {}
         self.creator_sk, self.creator = generate_account()
         self.set_account_balance(self.creator, 100_000_000)
 
@@ -36,6 +37,10 @@ class JigLedger:
         self.accounts[address]['balances'][asset_id] = [balance, frozen]
 
     def get_account_balance(self, address, asset_id=0):
+        if address not in self.accounts:
+            return [0, False]
+        if asset_id not in self.accounts[address]['balances']:
+            return [0, False]
         return self.accounts[address]['balances'][asset_id]
 
     def opt_in_asset(self, address, asset_id):
@@ -116,6 +121,9 @@ class JigLedger:
 
     def get_local_state(self, address, app_id):
         return self.accounts[address]['local_states'][app_id]
+
+    def get_raw_account(self, address):
+        return self.raw_accounts.get(address, {})
 
     def eval_transactions(self, transactions):
         self.init_ledger_db()
@@ -274,7 +282,7 @@ class JigLedger:
         self.db.execute(q, [0, 0])
 
     def write_block(self):
-        max_id = max(list(self.assets.keys()) + list(self.apps.keys()) + [0])
+        max_id = max(list(self.assets.keys()) + list(self.apps.keys()) + [-1])
         q = "SELECT hdrdata from blocks where rnd = 1"
         hdr_b = self.block_db.execute(q).fetchone()[0]
         hdr = msgpack.unpackb(hdr_b, strict_map_key=False)
@@ -289,8 +297,8 @@ class JigLedger:
         # reset globals
         self.assets = {}
         self.global_states = {}
+        self.raw_accounts = updated_accounts
         for a in updated_accounts:
-            # print(updated_accounts[a])
             # asset param records for asset creators
             for aid, params in updated_accounts[a].get(b'apar', {}).items():
                 self.assets[aid] = {
@@ -319,6 +327,9 @@ class JigLedger:
             account['balances'][0] = [updated_accounts[a].get(b'algo', 0), False]
             for aid, holding in updated_accounts[a].get(b'asset', {}).items():
                 account['balances'][aid] = [holding.get(b'a', 0), holding.get(b'f', False)]
+
+            if b'spend' in updated_accounts[a]:
+                account['auth_addr'] = encode_address(updated_accounts[a][b'spend'])
 
             # opted in apps
             account['local_states'] = {}
