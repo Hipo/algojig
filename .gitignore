@@ -133,4 +133,3 @@ dmypy.json
 
 /bin
 pyvenv.cfg
-gojig/go.sum
