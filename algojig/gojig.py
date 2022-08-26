@@ -1,11 +1,13 @@
 import base64
 import importlib.resources
-from io import BytesIO
 import json
-import subprocess
 import platform
-import algojig
+import subprocess
+from io import BytesIO
+
 from algosdk.encoding import msgpack
+
+import algojig
 
 machine = platform.machine()
 binary = f'algojig_{machine}'
@@ -17,8 +19,8 @@ def run(command, *args, input=None):
         return output
 
 
-def init_ledger():
-    output = run("init")
+def init_ledger(block_timestamp):
+    output = run("init", str(block_timestamp))
     # print(output.stderr.decode())
     if output.returncode != 0:
         raise Exception(output.stderr)
