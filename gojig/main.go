@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
 
 	"github.com/algorand/go-algorand/agreement"
 	"github.com/algorand/go-algorand/config"
@@ -61,7 +62,7 @@ func main() {
 	case "init":
 		os.RemoveAll("/tmp/jig")
 		os.MkdirAll("/tmp/jig", 0777)
-		initLedger(fn)
+		initLedger(fn, os.Args[2])
 	case "eval":
 		evalTransactions(fn)
 	case "read":
@@ -79,18 +80,29 @@ func main() {
 func debug(fn string) {
 	os.RemoveAll("/tmp/jig/jig_ledger.sqlite3.tracker.sqlite")
 	os.RemoveAll("/tmp/jig/jig_ledger.sqlite3.block.sqlite")
-	initLedger(fn)
+	initLedger(fn, "1000")
 	evalTransactions(fn)
 }
 
-func initLedger(fn string) {
+func initLedger(fn string, blockTimeStamp string) {
 	accounts := make(map[basics.Address]basics.AccountData)
 	ledger := makeJigLedger(fn, accounts)
 	prev, _ := ledger.BlockHdr(ledger.Latest())
 	// prev.Round = 200
 	block := bookkeeping.MakeBlock(prev)
-	// set a known timestamp
-	block.TimeStamp = 1000
+
+	if blockTimeStamp == "" {
+		// set a known timestamp
+		block.TimeStamp = 1000
+	} else {
+		ts, err := strconv.ParseInt(blockTimeStamp, 10, 64)
+		if err != nil {
+			fmt.Fprint(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+		block.TimeStamp = ts
+	}
+
 	err := ledger.AddBlock(block, agreement.Certificate{})
 	if err != nil {
 		fmt.Fprint(os.Stderr, err.Error())

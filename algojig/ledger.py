@@ -1,6 +1,6 @@
+import logging
 import re
 import sqlite3
-import logging
 
 from algosdk.account import generate_account
 from algosdk.encoding import decode_address, encode_address, msgpack
@@ -9,7 +9,6 @@ from algosdk.future.transaction import write_to_file
 from . import gojig
 from .exceptions import LogicEvalError, LogicSigReject
 from .program import read_program
-
 
 logger = logging.getLogger(__name__)
 
@@ -68,21 +67,25 @@ class JigLedger:
         if asset_id is None:
             caid = 0
             for id in self.apps:
-                if id > caid:
+                if id >= caid:
                     caid = id + 1
             for id in self.assets:
-                if id > caid:
+                if id >= caid:
                     caid = id + 1
             asset_id = caid
         params = params or {}
-        if asset_id and asset_id not in self.assets:
-            self.assets[asset_id] = params
+
+        assert asset_id, "Invalid asset id."
+        assert asset_id not in self.assets, f"Asset {asset_id} is already exists."
+
         if 'creator' not in params:
             params['creator'] = self.creator
         if 'total' not in params:
             params['total'] = (2**64 - 1)
         if 'unit_name' not in params:
             params['unit_name'] = 'TEST'
+
+        self.assets[asset_id] = params
         self.set_account_balance(params['creator'], params['total'], asset_id=asset_id)
         return asset_id
 
@@ -125,8 +128,8 @@ class JigLedger:
     def get_raw_account(self, address):
         return self.raw_accounts.get(address, {})
 
-    def eval_transactions(self, transactions):
-        self.init_ledger_db()
+    def eval_transactions(self, transactions, block_timestamp=1000):
+        self.init_ledger_db(block_timestamp)
         self.write()
         self.write_transactions(transactions)
         try:
@@ -174,8 +177,8 @@ class JigLedger:
     def write_transactions(self, transactions):
         write_to_file(transactions, self.stxn_filename)
 
-    def init_ledger_db(self):
-        return gojig.init_ledger()
+    def init_ledger_db(self, block_timestamp):
+        return gojig.init_ledger(block_timestamp)
 
     def open_db(self):
         self.db = sqlite3.connect(self.filename)
