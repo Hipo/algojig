@@ -338,7 +338,7 @@ class JigLedger:
             account['local_states'] = {}
             for aid, data in updated_accounts[a].get(b'appl', {}).items():
                 state = {}
-                for k, v in data[b'tkv'].items():
+                for k, v in data.get(b'tkv', {}).items():
                     state[k] = v.get(b'tb') if v[b'tt'] == 1 else v.get(b'ui', 0)
                 account['local_states'][aid] = state
 
