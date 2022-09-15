@@ -1,14 +1,13 @@
 # algojig
 
-Algojig is a development and testing jig for Algorand. It allows developers to run transactions and write tests starting from a known Algorand ledger state. 
+Algojig is a development and testing jig for Algorand. It allows developers to run transactions and write tests starting from a known Algorand ledger state. It is suitable for testing all kinds of transactions, including application calls and logic signatures.
 
-The ledger state is set declaratively. Transactions are evaluated to produce a block by the real Algorand node internals without the need to run a separate node of any kind. All signature checks, fee checks, accounting and logic evaluation is 
-completed as usual.
+The ledger state is set declaratively. Transactions are evaluated to produce a block by the real Algorand node internals _without the need to run a separate node of any kind_. All signature checks, fee checks, accounting and logic evaluation is completed as usual.
 
 ## Examples
 
 Standalone script:
-```
+```py
 from algojig import JigLedger, get_suggested_params, generate_accounts
 from algosdk.future.transaction import PaymentTxn
 
@@ -37,7 +36,7 @@ print(block[b'txns'])
 ```
 
 Example test:
-```
+```py
     def test_fail_overspend(self):
         transactions = [
             PaymentTxn(
@@ -52,7 +51,7 @@ Example test:
         self.assertIn('overspend', e.exception.args[0])
 ```
 
-See `tests/test_ledger.py` for more examples.
+See [tests/test_ledger.py](tests/test_ledger.py) and [examples](examples/) and for more examples.
 
 ## Tests
 
