@@ -59,3 +59,14 @@ def dump(*d):
     if len(d) == 1:
         d = d[0]
     pprint(_dump(d), indent=2)
+
+
+def print_logs(logs):
+    for log in logs:
+        if b'%i' in log:
+            i = log.index(b'%i')
+            s = log[0:i].decode()
+            value = int.from_bytes(log[i + 2:], 'big')
+            print(f'Log: {s}: {value}')
+        else:
+            print(f'Log: {log}')

@@ -95,6 +95,7 @@ class JigLedger:
         self.apps[app_id] = {
             'app_id': app_id,
             'approval_program': approval_program,
+            'approval_program_bytecode': approval_program.bytecode,
             'creator': creator or self.creator,
             'local_ints': local_ints,
             'local_bytes': local_bytes,
@@ -208,8 +209,8 @@ class JigLedger:
                     g[k]['tt'] = 2
                     g[k]['ui'] = v
             data = {
-                'q': a['approval_program'].bytecode,
-                'r': a['approval_program'].bytecode,
+                'q': a['approval_program_bytecode'],
+                'r': b"\x06\x81\x01",
                 's': g,     # global state
                 't': a['local_ints'],
                 'u': a['local_bytes'],
@@ -264,6 +265,7 @@ class JigLedger:
 
             for app_id, local_state in a['local_states'].items():
                 state = {}
+                app = self.apps[app_id]
                 for k, v in local_state.items():
                     state[k] = {}
                     if type(v) == bytes:
@@ -273,8 +275,8 @@ class JigLedger:
                         state[k]['tt'] = 2
                         state[k]['ui'] = v
                 data = {
-                    'n': 16,
-                    'o': 16,
+                    'n': app['local_ints'],
+                    'o': app['local_bytes'],
                     'p': state,     # local_state state
                     'y': 0,
                 }
@@ -344,6 +346,18 @@ class JigLedger:
 
             # created apps
             for aid, data in updated_accounts[a].get(b'appp', {}).items():
+                local_schema = data[b'lsch']
+                global_schema = data[b'gsch']
+                self.apps[aid] = {
+                    'app_id': aid,
+                    'creator': a,
+                    'approval_program_bytecode': data[b'approv'],
+                    'clear_program_bytecode': data[b'clearp'],
+                    'local_ints': local_schema.get(b'nui', 0),
+                    'local_bytes': local_schema.get(b'nbs', 0),
+                    'global_ints': global_schema.get(b'nui', 0),
+                    'global_bytes': global_schema.get(b'nbs', 0),
+                }
                 state = {}
                 for k, v in data.get(b'gs', {}).items():
                     state[k] = v.get(b'tb') if v[b'tt'] == 1 else v.get(b'ui', 0)
