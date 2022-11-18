@@ -346,8 +346,8 @@ class JigLedger:
 
             # created apps
             for aid, data in updated_accounts[a].get(b'appp', {}).items():
-                local_schema = data[b'lsch']
-                global_schema = data[b'gsch']
+                local_schema = data.get(b'lsch', {})
+                global_schema = data.get(b'gsch', {})
                 self.apps[aid] = {
                     'app_id': aid,
                     'creator': a,
