@@ -43,6 +43,7 @@ class JigLedger:
         return self.accounts[address]['balances'][asset_id]
 
     def opt_in_asset(self, address, asset_id):
+        assert asset_id, "Opt-in requires an asset id."
         self.set_account_balance(address, 0, asset_id=asset_id)
 
     def add(self, address, amount, asset_id=0):
