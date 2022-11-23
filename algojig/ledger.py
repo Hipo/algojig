@@ -216,7 +216,7 @@ class JigLedger:
                 'u': a['local_bytes'],
                 'v': a['global_ints'],
                 'w': a['global_bytes'],
-                'y': 3,
+                'y': AppResourceFlag.CREATOR,
             }
             q = 'INSERT INTO resources (addrid, aidx, data) VALUES (?, ?, ?)'
             self.db.execute(q, [creator_addrid, app_id, msgpack.packb(data)])
@@ -240,7 +240,7 @@ class JigLedger:
                     data = {
                         'l': b[0],  # balance
                         'm': b[1],  # frozen
-                        'y': 0 if b[0] else 4,
+                        'y': AssetResourceFlag.HOLDER if (b[0] or b[1]) else AssetResourceFlag.OPTEDIN,
                     }
                     if self.assets[asset_id]['creator'] == address:
                         q = 'INSERT INTO assetcreators (asset, creator, ctype) VALUES (?, ?, ?)'
@@ -258,7 +258,7 @@ class JigLedger:
                             'i': asset.get('reserve', None),
                             'j': asset.get('freeze', None),
                             'k': asset.get('clawback', None),
-                            'y': 7,
+                            "y": AssetResourceFlag.CREATOR_AND_HOLDER if (b[0] or b[1]) else AssetResourceFlag.CREATOR,
                         })
                     q = 'INSERT INTO resources (addrid, aidx, data) VALUES (?, ?, ?)'
                     self.db.execute(q, [a['rowid'], asset_id, msgpack.packb(data)])
@@ -278,7 +278,7 @@ class JigLedger:
                     'n': app['local_ints'],
                     'o': app['local_bytes'],
                     'p': state,     # local_state state
-                    'y': 0,
+                    'y': AppResourceFlag.HOLDER if state else AppResourceFlag.OPTEDIN,
                 }
                 q = 'INSERT INTO resources (addrid, aidx, data) VALUES (?, ?, ?)'
                 self.db.execute(q, [a['rowid'], app_id, msgpack.packb(data)])
@@ -346,18 +346,19 @@ class JigLedger:
 
             # created apps
             for aid, data in updated_accounts[a].get(b'appp', {}).items():
-                local_schema = data.get(b'lsch', {})
-                global_schema = data.get(b'gsch', {})
-                self.apps[aid] = {
-                    'app_id': aid,
-                    'creator': a,
-                    'approval_program_bytecode': data[b'approv'],
-                    'clear_program_bytecode': data[b'clearp'],
-                    'local_ints': local_schema.get(b'nui', 0),
-                    'local_bytes': local_schema.get(b'nbs', 0),
-                    'global_ints': global_schema.get(b'nui', 0),
-                    'global_bytes': global_schema.get(b'nbs', 0),
-                }
+                if aid not in self.apps:
+                    local_schema = data.get(b'lsch', {})
+                    global_schema = data.get(b'gsch', {})
+                    self.apps[aid] = {
+                        'app_id': aid,
+                        'creator': a,
+                        'approval_program_bytecode': data[b'approv'],
+                        'clear_program_bytecode': data[b'clearp'],
+                        'local_ints': local_schema.get(b'nui', 0),
+                        'local_bytes': local_schema.get(b'nbs', 0),
+                        'global_ints': global_schema.get(b'nui', 0),
+                        'global_bytes': global_schema.get(b'nbs', 0),
+                    }
                 state = {}
                 for k, v in data.get(b'gs', {}).items():
                     state[k] = v.get(b'tb') if v[b'tt'] == 1 else v.get(b'ui', 0)
@@ -373,3 +374,19 @@ class JigLedger:
         for a in self.assets:
             if a not in old_assets:
                 logger.debug(f'New Asset {a}')
+
+
+# See https://github.com/algorand/go-algorand/blob/d389196e9ccd023216ccaade1b4d93bcc31c2e69/ledger/accountdb.go#L1622
+# The use of the resource flags in accountdb.go is massively confusing but here we set the values for the scenarios we expect.
+class AssetResourceFlag:
+    CREATOR_AND_HOLDER = 2
+    CREATOR = 3
+    HOLDER = 0
+    OPTEDIN = 4
+
+
+class AppResourceFlag:
+    CREATOR_AND_HOLDER = 2
+    CREATOR = 3
+    HOLDER = 0
+    OPTEDIN = 8
