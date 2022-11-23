@@ -160,7 +160,7 @@ class JigLedger:
                 #     if stxn.get_txid() == txn_id:
                 #         lsig = stxn.lsig
                 #         break
-                if 'err=' in result:
+                if 'err=' in result and 'pc=' in result:
                     error = re.findall('err=(.+?) pc=', result)[0]
                     pc = int(re.findall(r'pc=(\d+)', result)[0])
                 else:
