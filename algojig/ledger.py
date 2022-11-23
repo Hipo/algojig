@@ -160,7 +160,7 @@ class JigLedger:
                 #     if stxn.get_txid() == txn_id:
                 #         lsig = stxn.lsig
                 #         break
-                if 'err=' in result:
+                if 'err=' in result and 'pc=' in result:
                     error = re.findall('err=(.+?) pc=', result)[0]
                     pc = int(re.findall(r'pc=(\d+)', result)[0])
                 else:
@@ -347,8 +347,8 @@ class JigLedger:
             # created apps
             for aid, data in updated_accounts[a].get(b'appp', {}).items():
                 if aid not in self.apps:
-                    local_schema = data[b'lsch']
-                    global_schema = data[b'gsch']
+                    local_schema = data.get(b'lsch', {})
+                    global_schema = data.get(b'gsch', {})
                     self.apps[aid] = {
                         'app_id': aid,
                         'creator': a,
