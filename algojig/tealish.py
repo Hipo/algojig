@@ -18,13 +18,14 @@ class TealishProgram:
 
     def compile(self):
         from tealish import compile_program
-        self.teal, self.min_teal, self.source_map = compile_program(self.tealish_source)
+        self.teal, self.source_map = compile_program(self.tealish_source)
         self.teal_program = TealProgram(teal='\n'.join(self.teal))
         self.bytecode = self.teal_program.bytecode
+        self.source_map.update_from_teal_sourcemap(self.teal_program.source_map)
 
     def lookup(self, pc):
-        teal_src = self.teal_program.lookup(pc)
-        line = self.source_map[teal_src['line_no']]
+        teal_src = None
+        line = self.source_map.get_tealish_line_for_pc(pc)
         src = self.tealish_source_lines[line - 1].strip()
         result = {
             'filename': self.filename,
@@ -41,8 +42,6 @@ class TealishProgram:
         base_filename = self.filename.replace('.tl', '')
         with open(output_path / f'{base_filename}.teal', 'w') as f:
             f.write('\n'.join(self.teal))
-        with open(output_path / f'{base_filename}.min.teal', 'w') as f:
-            f.write('\n'.join(self.min_teal))
         with open(output_path / f'{base_filename}.map.json', 'w') as f:
             f.write(json.dumps(self.source_map).replace('],', '],\n'))
         self.teal_program.write_files(output_path)

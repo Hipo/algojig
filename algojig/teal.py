@@ -1,10 +1,11 @@
 from pathlib import Path
-from algosdk import source_map, logic
+from algosdk import logic
+from algosdk.source_map import SourceMap
 from .gojig import compile
 
 
 class TealProgram:
-    def __init__(self, filename=None, teal=None, bytecode=None):
+    def __init__(self, filename=None, teal=None, bytecode=None, source_map=None):
         self.teal = teal
         self.filename = filename
         if self.filename:
@@ -12,7 +13,9 @@ class TealProgram:
         else:
             self.filename = 'input.teal'
         self.bytecode = bytecode
-        self.source_map = {}
+        self.source_map = None
+        if source_map:
+            self.source_map = SourceMap(source_map)
         self.hash = None
         if self.bytecode is None:
             self.compile()
@@ -23,7 +26,7 @@ class TealProgram:
             self.hash = logic.address(self.bytecode)
         except Exception:
             pass
-        self.source_map = source_map.SourceMap(map)
+        self.source_map = SourceMap(map)
 
     def compile(self):
         self.compile_teal()
