@@ -7,7 +7,7 @@ from algosdk.encoding import decode_address, encode_address, msgpack
 from algosdk.future.transaction import write_to_file
 
 from . import gojig
-from .exceptions import LogicEvalError, LogicSigReject
+from .exceptions import LogicEvalError, LogicSigReject, AppCallReject
 from .program import read_program
 
 logger = logging.getLogger(__name__)
@@ -169,6 +169,8 @@ class JigLedger:
                     pc = None
                 line = None
                 raise LogicSigReject(result, txn_id, error, line) from None
+            elif 'transaction rejected by ApprovalProgram' in result:
+                raise AppCallReject(result)
             else:
                 raise
         for a in list(result['accounts'].keys()):

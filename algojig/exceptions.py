@@ -3,7 +3,7 @@ class AppCallReject(Exception):
     def __init__(self, result) -> None:
         self.message = 'AppCall Reject'
         self.result = result
-        self.reason = result.reason
+        self.reason = result
 
     def __str__(self) -> str:
         return self.reason
