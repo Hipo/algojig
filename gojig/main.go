@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"strconv"
 
@@ -233,6 +234,25 @@ func evalTransactions(fn string) {
 		accounts[address] = data
 	}
 
+	// Find all box keys
+	keys, err := ledger.LookupKeysByPrefix(block.Round(), "bx:", math.MaxUint64)
+	if err != nil {
+		fmt.Fprint(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+	fmt.Fprint(os.Stderr, keys)
+
+	// Collect all box values
+	boxes := make(map[string][]byte)
+	for _, key := range keys {
+		data, err := ledger.LookupKv(block.Round(), key)
+		if err != nil {
+			fmt.Fprint(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+		boxes[key] = data
+	}
+
 	ledger.Close()
 
 	// For some reason updates are NOT written to the accounts tracker db here.
@@ -252,6 +272,11 @@ func evalTransactions(fn string) {
 		panic(err)
 	}
 	fmt.Print(string(accountsMsgp))
+	boxesMsgp, err := encode(boxes)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Print(string(boxesMsgp))
 
 	os.Exit(0)
 }

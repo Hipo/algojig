@@ -33,17 +33,20 @@ def eval():
         # print(output.stderr.decode())
         outputs = output.stdout
         accounts = []
+        boxes = {}
         u = msgpack.Unpacker(BytesIO(outputs), raw=True, strict_map_key=False, use_list=True)
         data = list(u)
         block = data[0]
         # backwards compatibility for gojig binaries that don't output accounts
         if len(data) > 1:
             accounts = data[1]
+            boxes = data[2]
         else:
             accounts = {}
         result = {
             'block': block,
             'accounts': accounts,
+            'boxes': boxes,
         }
         return result
     else:

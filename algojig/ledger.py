@@ -5,6 +5,7 @@ import sqlite3
 from algosdk.account import generate_account
 from algosdk.encoding import decode_address, encode_address, msgpack
 from algosdk.future.transaction import write_to_file
+from algosdk.logic import get_application_address
 
 from . import gojig
 from .exceptions import LogicEvalError, LogicSigReject, AppCallReject
@@ -21,6 +22,7 @@ class JigLedger:
         self.db = None
         self.block_db = None
         self.apps = {}
+        self.boxes = {}
         self.assets = {}
         self.accounts = {}
         self.global_states = {}
@@ -118,6 +120,11 @@ class JigLedger:
     def update_global_state(self, app_id, state_delta):
         self.global_states[app_id].update(state_delta)
 
+    def set_box(self, app_id, key, value):
+        if app_id not in self.boxes:
+            self.boxes[app_id] = {}
+        self.boxes[app_id][key] = value
+
     def set_auth_addr(self, address, auth_addr):
         self.accounts[address]['auth_addr'] = auth_addr
 
@@ -126,6 +133,12 @@ class JigLedger:
 
     def get_local_state(self, address, app_id):
         return self.accounts[address]['local_states'][app_id]
+
+    def get_box(self, app_id, key):
+        return self.boxes[app_id][key]
+
+    def box_exists(self, app_id, key):
+        return key in self.boxes.get(app_id, {})
 
     def get_raw_account(self, address):
         return self.raw_accounts.get(address, {})
@@ -176,6 +189,7 @@ class JigLedger:
         for a in list(result['accounts'].keys()):
             result['accounts'][encode_address(a)] = result['accounts'].pop(a)
         self.update_accounts(result['accounts'])
+        self.update_boxes(result['boxes'])
         return result['block']
 
     def write_transactions(self, transactions):
@@ -192,6 +206,7 @@ class JigLedger:
         self.open_db()
         self.write_accounts()
         self.write_apps()
+        self.write_boxes()
         self.write_block()
         self.db.commit()
         self.db.close()
@@ -229,6 +244,11 @@ class JigLedger:
     def write_accounts(self):
         for address, a in self.accounts.items():
             algo = a['balances'][0][0]
+            for app_id in self.apps:
+                if get_application_address(app_id) == address:
+                    break
+            else:
+                app_id = None
             data = {
                 'b': algo,
                 'e': decode_address(a.get('auth_addr')),
@@ -236,6 +256,12 @@ class JigLedger:
                 'l': len(a['local_states']),
                 'k': sum(1 for a in self.apps.values() if a['creator'] == address),
             }
+            # Box related data only applies to application accounts
+            if app_id is not None:
+                if self.boxes.get(app_id):
+                    data['m'] = len(self.boxes[app_id])  # TotalBoxes
+                    data['n'] = sum(len(k) + len(v or "") for k, v in self.boxes[app_id].items())  # TotalBoxBytes
+
             q = 'INSERT INTO accountbase (address, data) VALUES (?, ?)'
             a['rowid'] = self.db.execute(q, [decode_address(address), msgpack.packb(data)]).lastrowid
             for asset_id, b in a['balances'].items():
@@ -289,6 +315,13 @@ class JigLedger:
         q = "UPDATE acctrounds SET rnd=? WHERE id='acctbase' AND rnd<?"
         self.db.execute(q, [0, 0])
 
+    def write_boxes(self):
+        q = 'INSERT INTO kvstore (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value'
+        for app_id, boxes in self.boxes.items():
+            for key, value in boxes.items():
+                box_key = (b'bx:' + app_id.to_bytes(8, 'big') + key)
+                self.db.execute(q, [box_key, value or ""])
+
     def write_block(self):
         max_id = max(list(self.assets.keys()) + list(self.apps.keys()) + [-1])
         q = "SELECT hdrdata from blocks where rnd = 1"
@@ -299,6 +332,19 @@ class JigLedger:
         hdr['tc'] = max_id + 1
         q = "UPDATE blocks set hdrdata = ? where rnd = 1"
         self.block_db.execute(q, [msgpack.packb(hdr)])
+
+    def update_boxes(self, updated_boxes):
+        updated_keys = set()
+        for k, v in updated_boxes.items():
+            app_id = int.from_bytes(k[3:11], "big")
+            key = k[11:]
+            updated_keys.add((app_id, key))
+            self.set_box(app_id, key, v)
+        # Remove deleted boxes:
+        for app_id in self.boxes:
+            for key in list(self.boxes[app_id].keys()):
+                if (app_id, key) not in updated_keys:
+                    self.boxes[app_id].pop(key)
 
     def update_accounts(self, updated_accounts):
         old_assets = dict(self.assets)
