@@ -10,6 +10,7 @@ setup(
     version=VERSION,
     description=DESCRIPTION,
     url=URL,
+    platforms=['macos-arm64', 'linux-x64'],
     keywords=KEYWORDS,
     license=LICENSE,
     packages=["algojig"],
