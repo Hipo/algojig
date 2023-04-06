@@ -47,7 +47,7 @@ func compile(fname string) {
 	src, _ := readFile(fname)
 	ops, err := logic.AssembleString(string(src))
 	if err != nil {
-		ops.ReportProblems("", os.Stderr)
+		fmt.Fprint(os.Stderr, ops.Errors)
 		os.Exit(1)
 	}
 	fmt.Println(base64.StdEncoding.EncodeToString(ops.Program))
@@ -161,7 +161,7 @@ func evalTransactions(fn string) {
 	txgroups := bookkeeping.SignedTxnsToGroups(stxns)
 
 	for _, txgroup := range txgroups {
-		_, err = verify.TxnGroup(txgroup, prev, ledger.VerifiedTransactionCache(), logic.LedgerForSignature(ledger))
+		_, err = verify.TxnGroup(txgroup, &prev, ledger.VerifiedTransactionCache(), logic.LedgerForSignature(ledger))
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)
