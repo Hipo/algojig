@@ -1,6 +1,6 @@
 from algojig import JigLedger, get_suggested_params, generate_accounts, dump
 from algojig import TealProgram
-from algosdk.future.transaction import ApplicationNoOpTxn
+from algosdk.transaction import ApplicationNoOpTxn
 
 secrets, addresses = generate_accounts(2)
 sp = get_suggested_params()

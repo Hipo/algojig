@@ -1,6 +1,6 @@
 from algojig import get_suggested_params, generate_accounts, dump
 from algojig.ledger import JigLedger
-from algosdk.future.transaction import PaymentTxn
+from algosdk.transaction import PaymentTxn
 
 secrets, addresses = generate_accounts(2)
 
