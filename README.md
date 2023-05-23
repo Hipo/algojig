@@ -9,7 +9,7 @@ The ledger state is set declaratively. Transactions are evaluated to produce a b
 Standalone script:
 ```py
 from algojig import JigLedger, get_suggested_params, generate_accounts
-from algosdk.future.transaction import PaymentTxn
+from algosdk.transaction import PaymentTxn
 
 secrets, addresses = generate_accounts(2)
 sp = get_suggested_params()

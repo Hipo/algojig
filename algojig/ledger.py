@@ -4,7 +4,7 @@ import sqlite3
 
 from algosdk.account import generate_account
 from algosdk.encoding import decode_address, encode_address, msgpack
-from algosdk.future.transaction import write_to_file
+from algosdk.transaction import write_to_file
 from algosdk.logic import get_application_address
 
 from . import gojig

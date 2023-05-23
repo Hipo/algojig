@@ -2,7 +2,7 @@ import base64
 from dataclasses import dataclass
 from typing import Dict, List
 import algosdk
-from algosdk.future.transaction import SuggestedParams
+from algosdk.transaction import SuggestedParams
 from algosdk.v2client import models
 from algosdk.v2client.algod import AlgodClient
 from algosdk.encoding import encode_address

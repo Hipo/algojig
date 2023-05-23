@@ -2,7 +2,7 @@ import unittest
 
 from algojig import JigLedger, generate_accounts, get_suggested_params
 from algojig.teal import TealProgram
-from algosdk.future.transaction import (ApplicationNoOpTxn, AssetTransferTxn,
+from algosdk.transaction import (ApplicationNoOpTxn, AssetTransferTxn,
                                         LogicSigAccount, LogicSigTransaction,
                                         PaymentTxn, assign_group_id)
 

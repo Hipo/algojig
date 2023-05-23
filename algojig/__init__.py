@@ -2,7 +2,7 @@ import base64
 from pprint import pprint
 
 from algosdk.account import generate_account
-from algosdk.future.transaction import SuggestedParams
+from algosdk.transaction import SuggestedParams
 from algosdk.encoding import encode_address
 
 
