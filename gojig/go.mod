@@ -2,7 +2,7 @@ module github.com/Hipo/algojig
 
 go 1.18
 
-replace github.com/algorand/go-algorand => /Users/fergal/go-algorand
+replace github.com/algorand/go-algorand => ../../go-algorand
 
 require (
 	github.com/algorand/go-algorand v0.0.0
@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/DataDog/zstd v1.5.2 // indirect
-	github.com/algorand/avm-abi v0.1.1 // indirect
+	github.com/algorand/avm-abi v0.2.0 // indirect
 	github.com/algorand/falcon v0.0.0-20220727072124-02a2a64c4414 // indirect
 	github.com/algorand/go-deadlock v0.2.2 // indirect
 	github.com/algorand/go-sumhash v0.1.0 // indirect
