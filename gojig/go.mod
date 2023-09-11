@@ -2,7 +2,7 @@ module github.com/Hipo/algojig
 
 go 1.18
 
-replace github.com/algorand/go-algorand => /Users/fergal/go-algorand
+replace github.com/algorand/go-algorand => ../../go-algorand
 
 require (
 	github.com/algorand/go-algorand v0.0.0

@@ -10,13 +10,14 @@ setup(
     version=VERSION,
     description=DESCRIPTION,
     url=URL,
+    platforms=['macos-arm64', 'linux-x64'],
     keywords=KEYWORDS,
     license=LICENSE,
     packages=["algojig"],
     package_data={"algojig": ["algojig_*"]},
     include_package_data=True,
     install_requires=[
-        "py-algorand-sdk==1.20.0, <2.0",
+        "py-algorand-sdk>=2.0.0",
     ],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",

@@ -133,3 +133,4 @@ dmypy.json
 
 /bin
 pyvenv.cfg
+wheelhouse/

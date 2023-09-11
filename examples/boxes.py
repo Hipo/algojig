@@ -1,6 +1,6 @@
 from algojig import JigLedger, get_suggested_params, generate_accounts
 from algojig import TealishProgram
-from algosdk.future.transaction import ApplicationNoOpTxn
+from algosdk.transaction import ApplicationNoOpTxn
 from algosdk.logic import get_application_address
 
 secrets, addresses = generate_accounts(2)
