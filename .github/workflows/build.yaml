@@ -42,12 +42,12 @@ jobs:
           export SKIP_GO_INSTALLATION=True
           scripts/travis/build.sh
 
-      - name: Build algojig
+      - name: Build algojig ${{ matrix.os }}
         run: |
           cd algojig/gojig
-          echo "RUNNER_ARCH: $RUNNER_ARCH"
-          echo "../algojig/algojig_$RUNNER_ARCH"
-          go build -o ../algojig/algojig_$RUNNER_ARCH .
+      
+          echo "../algojig/algojig_${{ matrix.os }}"
+          go build -o ../algojig/algojig_${{ matrix.os }} .
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v3
