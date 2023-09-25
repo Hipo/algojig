@@ -45,7 +45,6 @@ jobs:
       - name: Build algojig ${{ matrix.os }}
         run: |
           cd algojig/gojig
-      
           echo "../algojig/algojig_${{ matrix.os }}"
           go build -o ../algojig/algojig_${{ matrix.os }} .
 
@@ -60,4 +59,5 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
+          name: algojig ${{ matrix.os }}
           path: ./wheelhouse/*.whl
