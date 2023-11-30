@@ -14,7 +14,7 @@ binary = f'algojig_{machine}'
 
 
 def run(command, *args, input=None):
-    with importlib.resources.path(algojig, binary) as p:
+    with importlib.resources.files(algojig).joinpath(binary) as p:
         output = subprocess.run([p, command, *args], capture_output=True, input=input)
         return output
 
