@@ -9,8 +9,9 @@ from algosdk.encoding import msgpack
 
 import algojig
 
-machine = platform.machine()
-binary = f'algojig_{machine}'
+machine = platform.machine().lower()
+system = platform.system().lower()
+binary = f'algojig_{system}_{machine}'
 
 
 def run(command, *args, input=None):
