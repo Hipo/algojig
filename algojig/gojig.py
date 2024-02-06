@@ -14,9 +14,9 @@ binary = f'algojig_{machine}'
 
 
 def run(command, *args, input=None):
-    with importlib.resources.files(algojig).joinpath(binary) as p:
-        output = subprocess.run([p, command, *args], capture_output=True, input=input)
-        return output
+    p = importlib.resources.files(algojig).joinpath(binary)
+    output = subprocess.run([p, command, *args], capture_output=True, input=input)
+    return output
 
 
 def init_ledger(block_timestamp):
