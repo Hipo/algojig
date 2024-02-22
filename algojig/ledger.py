@@ -362,6 +362,7 @@ class JigLedger:
                     'unit_name': params.get(b'un', None),
                     'name': params.get(b'an', None),
                     'url': params.get(b'au', None),
+                    "manager": encode_address(params.get(b"m", None)),
                     'reserve': encode_address(params.get(b'r', None)),
                     'freeze': encode_address(params.get(b'f', None)),
                     'clawback': encode_address(params.get(b'c', None)),
