@@ -1,7 +1,6 @@
 import base64
 import importlib.resources
 import json
-import platform
 import subprocess
 from io import BytesIO
 
@@ -9,8 +8,7 @@ from algosdk.encoding import msgpack
 
 import algojig
 
-machine = platform.machine()
-binary = f'algojig_{machine}'
+binary = f'algojig'
 
 
 def run(command, *args, input=None):

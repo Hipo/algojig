@@ -45,9 +45,8 @@ jobs:
       - name: Build algojig
         run: |
           cd algojig/gojig
-          echo "RUNNER_ARCH: $RUNNER_ARCH"
-          echo "../algojig/algojig_$RUNNER_ARCH"
-          go build -o ../algojig/algojig_$RUNNER_ARCH .
+          echo "../algojig/algojig"
+          go build -o ../algojig/algojig .
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v3
@@ -56,8 +55,8 @@ jobs:
         run: |
           cd algojig
           pip install wheel
-          pip wheel -w ../wheelhouse .
+          python setup.py bdist_wheel
 
       - uses: actions/upload-artifact@v3
         with:
-          path: ./wheelhouse/*.whl
+          path: ./algojig/dist/*.whl
