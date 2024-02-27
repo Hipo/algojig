@@ -47,7 +47,7 @@ func compile(fname string) {
 	src, _ := readFile(fname)
 	ops, err := logic.AssembleString(string(src))
 	if err != nil {
-		ops.ReportProblems("", os.Stderr)
+		fmt.Fprint(os.Stderr, ops.Errors)
 		os.Exit(1)
 	}
 	fmt.Println(base64.StdEncoding.EncodeToString(ops.Program))
@@ -128,7 +128,7 @@ func evalTransactions(fn string) {
 
 	prev, _ := ledger.BlockHdr(ledger.Latest())
 	block := bookkeeping.MakeBlock(prev)
-	eval, err := ledger.StartEvaluator(block.BlockHeader, 0, 0)
+	eval, err := ledger.StartEvaluator(block.BlockHeader, 0, 0, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -161,7 +161,7 @@ func evalTransactions(fn string) {
 	txgroups := bookkeeping.SignedTxnsToGroups(stxns)
 
 	for _, txgroup := range txgroups {
-		_, err = verify.TxnGroup(txgroup, prev, ledger.VerifiedTransactionCache(), logic.LedgerForSignature(ledger))
+		_, err = verify.TxnGroup(txgroup, &prev, ledger.VerifiedTransactionCache(), logic.LedgerForSignature(ledger))
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)
@@ -202,23 +202,20 @@ func evalTransactions(fn string) {
 	<-ledger.Wait(block.Round())
 
 	// Find all previously created assets
-	results, err := ledger.ListAssets(basics.AssetIndex(block.TxnCounter), block.TxnCounter)
-	if err != nil {
-		fmt.Fprint(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-
 	// Add all asset creators to the list of addresses to fetch account info for
-	for _, creatableLocator := range results {
-		exists := false
-		for _, address := range addresses {
-			if creatableLocator.Creator == address {
-				exists = true
-				break
+	for i := 0; uint64(i) < block.TxnCounter; i++ {
+		creator, exists, _ := ledger.GetCreator(basics.CreatableIndex(i), basics.AssetCreatable)
+		if exists {
+			found := false
+			for _, address := range addresses {
+				if creator == address {
+					found = true
+					break
+				}
 			}
-		}
-		if !exists {
-			addresses = append(addresses, creatableLocator.Creator)
+			if !found {
+				addresses = append(addresses, creator)
+			}
 		}
 	}
 

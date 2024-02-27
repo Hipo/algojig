@@ -1,6 +1,6 @@
 from setuptools import setup
 PACKAGE_NAME = "algojig"
-VERSION = "0.0.1"
+VERSION = "0.0.2"
 DESCRIPTION = "A testing jig for the Algorand Virtual Machine."
 KEYWORDS = "algorand teal tealish"
 LICENSE = "MIT"
@@ -14,11 +14,12 @@ setup(
     keywords=KEYWORDS,
     license=LICENSE,
     packages=["algojig"],
-    package_data={"algojig": ["algojig_*"]},
+    package_data={"algojig": ["algojig*"]},
     include_package_data=True,
     install_requires=[
         "py-algorand-sdk>=2.0.0",
     ],
+    has_ext_modules=lambda: True,
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
