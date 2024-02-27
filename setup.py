@@ -1,4 +1,4 @@
-from setuptools import setup, Extension
+from setuptools import setup
 PACKAGE_NAME = "algojig"
 VERSION = "0.0.1"
 DESCRIPTION = "A testing jig for the Algorand Virtual Machine."

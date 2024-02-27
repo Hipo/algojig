@@ -54,7 +54,7 @@ jobs:
       - name: Build wheels
         run: |
           cd algojig
-          pip install wheel
+          pip install setuptools wheel
           python setup.py bdist_wheel
 
       - uses: actions/upload-artifact@v3
