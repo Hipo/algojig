@@ -121,9 +121,15 @@ class JigLedger:
         self.global_states[app_id].update(state_delta)
 
     def set_box(self, app_id, key, value):
+        if type(value) is not bytearray:
+            value = bytearray(value)
         if app_id not in self.boxes:
             self.boxes[app_id] = {}
-        self.boxes[app_id][key] = value
+        if key in self.boxes[app_id]:
+            # use slicing to mutate the existing object
+            self.boxes[app_id][key][:] = value[:]
+        else:
+            self.boxes[app_id][key] = value
 
     def set_auth_addr(self, address, auth_addr):
         self.accounts[address]['auth_addr'] = auth_addr
@@ -283,10 +289,10 @@ class JigLedger:
                             'e': asset.get('name', b''),
                             'f': asset.get('url', b''),
                             'g': asset.get('metadata_hash', b''),
-                            'h': asset.get('manager', None),
-                            'i': asset.get('reserve', None),
-                            'j': asset.get('freeze', None),
-                            'k': asset.get('clawback', None),
+                            'h': decode_address(asset['manager']) if 'manager' in asset else None,
+                            'i': decode_address(asset['reserve']) if 'reserve' in asset else None,
+                            'j': decode_address(asset['freeze']) if 'freeze' in asset else None,
+                            'k': decode_address(asset['clawback']) if 'clawback' in asset else None,
                             "y": AssetResourceFlag.CREATOR_AND_HOLDER if (b[0] or b[1]) else AssetResourceFlag.CREATOR,
                         })
                     q = 'INSERT INTO resources (addrid, aidx, data) VALUES (?, ?, ?)'
