@@ -18,8 +18,12 @@ class LogicEvalError(Exception):
         super().__init__(result)
 
     def __str__(self) -> str:
-        line = self.source['line']
-        line_no = self.source['line_no']
+        try:
+            line = self.source['line']
+            line_no = self.source['line_no']
+        except Exception:
+            line_no = ""
+            line = ""
         return f'{self.error}: L{line_no}: {line}'
 
 

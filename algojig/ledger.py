@@ -29,6 +29,7 @@ class JigLedger:
         self.raw_accounts = {}
         self.creator_sk, self.creator = generate_account()
         self.set_account_balance(self.creator, 100_000_000)
+        self.next_timestamp = 1000
 
     def set_account_balance(self, address, balance, asset_id=0, frozen=False):
         if address not in self.accounts:
@@ -149,8 +150,8 @@ class JigLedger:
     def get_raw_account(self, address):
         return self.raw_accounts.get(address, {})
 
-    def eval_transactions(self, transactions, block_timestamp=1000):
-        self.init_ledger_db(block_timestamp)
+    def eval_transactions(self, transactions, block_timestamp=None):
+        self.init_ledger_db(block_timestamp or self.next_timestamp)
         self.write()
         self.write_transactions(transactions)
         try:
@@ -196,6 +197,7 @@ class JigLedger:
             result['accounts'][encode_address(a)] = result['accounts'].pop(a)
         self.update_accounts(result['accounts'])
         self.update_boxes(result['boxes'])
+        self.last_block = result['block']
         return result['block']
 
     def write_transactions(self, transactions):

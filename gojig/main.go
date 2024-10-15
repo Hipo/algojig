@@ -231,6 +231,15 @@ func evalTransactions(fn string) {
 		accounts[address] = data
 	}
 
+	// Find accounts of all apps
+	for i := 0; uint64(i) < block.TxnCounter; i++ {
+		appAddress := basics.AppIndex(i).Address()
+		data, _, algo, err := ledger.LookupLatest(appAddress)
+		if err == nil && algo.GreaterThan(basics.MicroAlgos{}) {
+			accounts[appAddress] = data
+		}
+	}
+
 	// Find all box keys
 	keys, err := ledger.LookupKeysByPrefix(block.Round(), "bx:", math.MaxUint64)
 	if err != nil {
@@ -307,7 +316,7 @@ func encode(obj interface{}) ([]byte, error) {
 
 func makeJigLedger(fn string, initAccounts map[basics.Address]basics.AccountData) *ledger.Ledger {
 	var poolData basics.AccountData
-	poolData.MicroAlgos.Raw = 123456789
+	poolData.MicroAlgos.Raw = 10_000_000_000_000_000
 	initAccounts[rewardsPool] = poolData
 
 	var feeData basics.AccountData

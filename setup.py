@@ -1,6 +1,6 @@
 from setuptools import setup
 PACKAGE_NAME = "algojig"
-VERSION = "0.0.2"
+VERSION = "0.0.3"
 DESCRIPTION = "A testing jig for the Algorand Virtual Machine."
 KEYWORDS = "algorand teal tealish"
 LICENSE = "MIT"
