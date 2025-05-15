@@ -93,7 +93,7 @@ class JigLedger:
         self.set_account_balance(params['creator'], params['total'], asset_id=asset_id)
         return asset_id
 
-    def create_app(self, app_id, approval_filename=None, approval_program=None, creator=None, local_ints=16, local_bytes=16, global_ints=64, global_bytes=64):
+    def create_app(self, app_id, approval_filename=None, approval_program=None, creator=None, local_ints=16, local_bytes=16, global_ints=64, global_bytes=64, extra_pages=0):
         if approval_program is None:
             approval_program = read_program(approval_filename)
         self.apps[app_id] = {
@@ -105,6 +105,7 @@ class JigLedger:
             'local_bytes': local_bytes,
             'global_ints': global_ints,
             'global_bytes': global_bytes,
+            'extra_pages': extra_pages,
         }
 
     def set_local_state(self, address, app_id, state):
@@ -242,6 +243,7 @@ class JigLedger:
                 'u': a['local_bytes'],
                 'v': a['global_ints'],
                 'w': a['global_bytes'],
+                'x': a['extra_pages'],
                 'y': AppResourceFlag.CREATOR,
             }
             q = 'INSERT INTO resources (addrid, aidx, data) VALUES (?, ?, ?)'
