@@ -358,9 +358,6 @@ class JigLedger:
 
     def update_accounts(self, updated_accounts):
         old_assets = dict(self.assets)
-        # reset globals
-        self.assets = {}
-        self.global_states = {}
         self.raw_accounts = updated_accounts
         for a in updated_accounts:
             # asset param records for asset creators
